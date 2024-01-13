@@ -1,0 +1,220 @@
+body,
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Arial", sans-serif;
+  background-color: #1a1a1a;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+h1 {
+  text-align: center;
+}
+
+.container {
+  position: relative;
+  max-width: 600px;
+  margin: auto;
+}
+
+#question {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #fff;
+  text-align: center;
+  max-width: 400px !important;
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+}
+
+input[type="text"] {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 22px 0 0 0px;
+  background-color: #333;
+  color: white;
+  font-size: 1rem;
+  border: 1px solid #6ca22f;
+  width: 100%;
+}
+
+#searchResults {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  margin-top: 0;
+  padding: 0;
+  list-style-type: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 2;
+  border-radius: 0 0 22px 22px;
+  width: calc(100% - 40px);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+#searchResults li {
+  padding: 10px 20px;
+  border-top: 1px solid #444;
+  cursor: pointer;
+  color: white;
+}
+
+#searchResults li:hover {
+  background-color: #555;
+}
+
+#submitAnswer {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 0 22px 0 0;
+  background-color: #6ca22f;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+#submitAnswer:hover {
+  background-color: #5a8e25;
+}
+
+#submitAnswer:focus {
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+}
+
+/* Progress container */
+#progress-container {
+  position: absolute;
+  top: 0;
+  width: 80%;
+  height: 40px; /* Increased height to accommodate dots and bar */
+  padding-top: 20px; /* Space for dots */
+  background-color: transparent; /* No background color */
+  z-index: 10;
+}
+
+/* Progress bar */
+#progress-bar {
+  position: absolute;
+  bottom: 32%;
+  left: 0;
+  height: 2px;
+  background-color: #6ca22f;
+  width: 0%;
+  transition: width 0.5s ease-out;
+  z-index: 0;
+}
+
+#progress-bar-gray {
+  position: absolute;
+  bottom: 32%;
+  left: 0;
+  height: 2px;
+  background-color: #494949;
+  width: 100%;
+  z-index: -1;
+}
+
+/* Progress dots */
+#progress-dots {
+  display: flex;
+  justify-content: space-between; /* Evenly space the dots */
+  align-items: center;
+  height: 100%;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ddd;
+  position: relative; /* Needed for dot positioning */
+}
+
+.active-dot {
+  background-color: #6ca22f;
+}
+
+@media (max-width: 1000px) {
+  body,
+  html {
+    font-size: 18px; /* Increase the base font size */
+  }
+
+  h1 {
+    font-size: 3.5rem; /* Larger font size for heading */
+  }
+
+  .container {
+    max-width: 90vw !important;
+  }
+
+  #question {
+    max-width: 90vw !important;
+    margin-bottom: 50px;
+    font-size: 3.5rem; /* Larger font size for questions */
+  }
+
+  input[type="text"] {
+    font-size: 2.5rem; /* Larger font size for input */
+    border: 3px solid #6ca22f;
+  }
+
+  #searchResults {
+    padding: 0;
+    max-height: 300px; /* Larger max-height for more results */
+  }
+
+  #searchResults li {
+    padding: 15px 30px; /* Larger padding for list items */
+    font-size: 1.5rem; /* Larger font size for list items */
+  }
+
+  #submitAnswer {
+    padding: 15px 30px; /* Larger padding for submit button */
+    font-size: 2.5rem; /* Larger font size for button */
+  }
+
+  #progress-container {
+    top: 10px; /* Adjust top position */
+    height: 60px; /* Increased height for progress container */
+    padding-top: 30px; /* Adjust padding to vertically center dots */
+  }
+
+  #progress-bar {
+    bottom: 20px; /* Position at the bottom of the container */
+    height: 4px; /* Thicker progress bar */
+  }
+
+  .progress-dot {
+    width: 15px; /* Larger dot size */
+    height: 15px; /* Larger dot size */
+    margin: 0 3px; /* Adjust spacing between dots */
+  }
+
+  .active-dot {
+    width: 20px; /* Even larger size for active dot */
+    height: 20px; /* Even larger size for active dot */
+  }
+}

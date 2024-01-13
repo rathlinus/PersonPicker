@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #1a1a1a;
+        color: white;
+        margin: 0;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        color: #fff;
+      }
+
+      .question {
+        background: #333;
+        padding: 20px;
+        border-radius: 8px;
+      }
+
+      .vote {
+        background: #222;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 4px;
+        position: relative;
+      }
+
+      .vote-entry {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 5px 0;
+      }
+
+      .name {
+        z-index: 2; /* Make the text appear above the pseudo-element */
+        padding: 5px 10px; /* Padding to make the text readable */
+      }
+
+      .count {
+        right: 10px;
+        position: absolute;
+        z-index: 2;
+      }
+
+      .vote-bar-background {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background-color: #547a28;
+        border-radius: 5px;
+        width: 10%; /* Start with 0 width */
+        transition: width 2s ease; /* Animate the width change */
+        display: flex;
+        align-items: center; /* Align items vertically */
+      }
+
+      .first-place-bar {
+        background-color: #6ca22f; /* New color for the first place */
+      }
+
+      .first-place-name {
+        font-weight: bold;
+        font-size: larger;
+      }
+
+      #dashboard {
+        display: grid;
+        grid-template-columns: repeat(
+          2,
+          1fr
+        ); /* Creates two columns of equal width */
+        grid-gap: 20px; /* Space between grid items */
+        max-width: 80vw; /* Adjust as needed */
+        margin: auto; /* Center the grid */
+      }
+
+      .question {
+        background: #333;
+        padding: 20px;
+        border-radius: 8px;
+        /* Remove margin if previously set, as grid-gap handles spacing */
+      }
+
+      @media (max-width: 800px) {
+        #dashboard {
+          grid-template-columns: 1fr; /* Single column layout for smaller screens */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Admin Dashboard</h1>
+    <div id="dashboard"></div>
+
+    <script>
+      // Fetch the questions and answers data
+      Promise.all([
+        fetch("/questions").then((response) => response.json()),
+        fetch("/answers.json").then((response) => response.json()),
+      ])
+        .then(([questions, answers]) => {
+          const dashboard = document.getElementById("dashboard");
+          answers.forEach((answerData) => {
+            const questionText = questions.find(
+              (q) => q.id === answerData.questionId
+            ).question;
+            const questionDiv = document.createElement("div");
+            questionDiv.classList.add("question");
+            questionDiv.innerHTML = `<h2>${questionText}</h2>`;
+            const votesDiv = document.createElement("div");
+            votesDiv.classList.add("votes");
+
+            // Find the max number of votes for this question
+            const maxVotes = Math.max(...Object.values(answerData.votes));
+
+            const votes = answerData.votes;
+            let voteEntries = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+            if (voteEntries.length === 0) {
+              votesDiv.innerHTML = `<p>No one voted yet on this question</p>`;
+            } else {
+              voteEntries.forEach(([name, count], index) => {
+                const votePercentage = (count / maxVotes) * 100;
+                votesDiv.innerHTML += `
+        <div class="vote-entry">
+            <span class="name ${
+              index === 0 ? "first-place-name" : ""
+            }">${name}</span>
+            <div class="vote-bar-background ${
+              index === 0 ? "first-place-bar" : ""
+            }" data-width="${votePercentage}">
+                <span class="count">${count}</span>
+            </div>
+        </div>
+    `;
+              });
+            }
+            questionDiv.appendChild(votesDiv);
+            dashboard.appendChild(questionDiv);
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+          const dashboard = document.getElementById("dashboard");
+          dashboard.innerHTML = `<p>Error loading the data. Please try again later.</p>`;
+        });
+
+      setTimeout(() => {
+        document.querySelectorAll(".vote-bar-background").forEach((bar) => {
+          const width = bar.getAttribute("data-width");
+          calwidth = width * 0.9 + 10;
+          bar.style.width = calwidth + "%";
+        });
+      }, 100);
+    </script>
+  </body>
+</html>

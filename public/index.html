@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lehrerranking</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+      <div id="progress-bar-gray"></div>
+      <div id="progress-dots"></div>
+    </div>
+    <div class="container">
+      <h1>Lehrerranking</h1>
+      <div id="question"></div>
+      <div class="search-container" id="search-container">
+        <input
+          type="text"
+          id="answerInput"
+          placeholder="Suchen..."
+          oninput="searchAnswer()"
+        />
+        <button id="submitAnswer" onclick="submitAnswer()">Weiter</button>
+        <ul id="searchResults"></ul>
+      </div>
+    </div>
+  </body>
+</html>

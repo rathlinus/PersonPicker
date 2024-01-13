@@ -1,0 +1,69 @@
+[
+  {
+    "questionId": 1,
+    "votes": {
+      "Buchenau": 1,
+      "": 4,
+      "Albrecht": 3,
+      "arsc": 1,
+      "Appel": 1
+    }
+  },
+  {
+    "questionId": 2,
+    "votes": {
+      "Buchenau": 1,
+      "": 1,
+      "Appel": 2,
+      "Benner": 1,
+      "Albrecht": 1
+    }
+  },
+  {
+    "questionId": 3,
+    "votes": {
+      "Albrecht": 2,
+      "Appel": 2,
+      "Brünig": 1
+    }
+  },
+  {
+    "questionId": 4,
+    "votes": {
+      "Winkler": 1,
+      "Albrecht": 1,
+      "Dieckmann": 1
+    }
+  },
+  {
+    "questionId": 5,
+    "votes": {
+      "Sewiolo": 1,
+      "Albrecht": 1
+    }
+  },
+  {
+    "questionId": 6,
+    "votes": {
+      "Plogmann": 1
+    }
+  },
+  {
+    "questionId": 7,
+    "votes": {
+      "Böning": 1
+    }
+  },
+  {
+    "questionId": 8,
+    "votes": {
+      "Plogmann": 1
+    }
+  },
+  {
+    "questionId": 9,
+    "votes": {
+      "Böning": 1
+    }
+  }
+]
