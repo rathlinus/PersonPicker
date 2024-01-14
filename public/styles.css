@@ -1,4 +1,4 @@
-body,
+wrapper,
 html {
   height: 100%;
   margin: 0;
@@ -9,7 +9,7 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 h1 {
@@ -217,4 +217,69 @@ button:focus {
     width: 20px; /* Even larger size for active dot */
     height: 20px; /* Even larger size for active dot */
   }
+}
+
+@keyframes invalidShake {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  20%,
+  60% {
+    transform: translateY(-3px);
+  }
+  40%,
+  80% {
+    transform: translateY(3px);
+  }
+}
+
+.invalid-answer {
+  animation: invalidShake 0.5s ease-in-out;
+  background-color: #ff4d4d !important;
+}
+
+#submitAnswer {
+  transition: background-color 0.5s ease; /* Smooth transition for color change */
+}
+
+.logocontainer {
+  position: fixed;
+  max-width: 200px;
+  left: 50%;
+  bottom: 50px;
+  transform: translateX(-50%);
+  width: 50%;
+  transition: transform 0.3s ease;
+}
+
+.logocontainer:hover {
+  /* Scale up when hovered, while keeping it centered */
+  transform: translateX(-50%) scale(1.1);
+}
+
+#logo {
+  width: 100%;
+  max-width: 500px;
+}
+
+p {
+  margin: 0;
+  color: #fff;
+}
+
+a:link {
+  text-decoration: none;
+}
+
+a:visited {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+a:active {
+  text-decoration: none;
 }

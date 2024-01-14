@@ -1,24 +1,23 @@
 let persons = [];
 let currentQuestionIndex = 0;
 let questions = [];
+let pollId = new URL(window.location.href).pathname.split("/")[2];
 
 // Function to initialize the questionnaire
+// Function to initialize the questionnaire
 function initializeQuestionnaire() {
-  fetch("/persons")
-    .then((response) => response.json())
-    .then((data) => {
-      persons = data;
-    });
-
-  fetchQuestions().then(() => {
+  Promise.all([
+    fetch(`/poll/${pollId}/persons`).then((response) => response.json()),
+    fetchQuestions(),
+  ]).then(([personsData, _]) => {
+    persons = personsData[0].json;
     createProgressDots();
     displayQuestion();
   });
 }
 
-// Fetch questions and update the UI
-function fetchQuestions() {
-  return fetch("/questions")
+async function fetchQuestions() {
+  return fetch(`/poll/${pollId}/questions`)
     .then((response) => response.json())
     .then((data) => {
       questions = data;
@@ -44,6 +43,15 @@ function updateProgress() {
     ).style.width = `${progressPercentage}%`;
   }
 }
+
+function createCompletionDot() {
+  const progressDotsContainer = document.getElementById("progress-dots");
+  const dot = document.createElement("div");
+  dot.classList.add("progress-dot", "completion-dot");
+  dot.innerHTML = "🎉"; // Add the emoji inside the dot
+  progressDotsContainer.appendChild(dot);
+}
+
 function createProgressDots() {
   const progressDotsContainer = document.getElementById("progress-dots");
   progressDotsContainer.innerHTML = ""; // Clear existing dots
@@ -53,6 +61,15 @@ function createProgressDots() {
     dot.classList.add("progress-dot");
     progressDotsContainer.appendChild(dot);
   });
+
+  // Add spacing between dots
+  const dots = document.querySelectorAll(".progress-dot");
+  dots.forEach((dot, index) => {
+    if (index !== dots.length - 1) {
+      dot.style.marginRight = "10px"; // Adjust the spacing as needed
+    }
+  });
+
   updateProgress(); // Call this to update progress initially
 }
 
@@ -61,7 +78,8 @@ function createProgressDots() {
 function displayQuestion() {
   if (currentQuestionIndex < questions.length) {
     const currentQuestion = questions[currentQuestionIndex];
-    document.getElementById("question").innerText = currentQuestion.question;
+    document.getElementById("question").innerText =
+      currentQuestion.question_text;
     document.getElementById("answerInput").value = "";
     updateActiveDot();
     searchAnswer(); // Call this to update suggestions for the current question
@@ -83,12 +101,31 @@ function updateActiveDot() {
 
 // Submit answer and go to the next question
 function submitAnswer() {
+  const answerInput = document.getElementById("answerInput").value;
+  const category = "teachers";
+  const submitButton = document.getElementById("submitAnswer");
+
+  console.log(persons);
+
+  // Check if the answer is in the list of persons
+  if (!persons.some((person) => person.name === answerInput)) {
+    // Apply the invalid-answer class for animation
+    submitButton.classList.add("invalid-answer");
+
+    // Remove the class after the animation ends
+    setTimeout(() => {
+      submitButton.classList.remove("invalid-answer");
+    }, 600); // 500ms matches the duration of the animation
+
+    return;
+  }
+
   const answer = {
     questionId: questions[currentQuestionIndex].id,
-    answer: document.getElementById("answerInput").value,
+    answer: answerInput,
   };
 
-  fetch("/answers", {
+  fetch(`/poll/${pollId}/answers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -104,15 +141,16 @@ function submitAnswer() {
     });
 }
 
-// Populate search results
 function searchAnswer() {
   const input = document.getElementById("answerInput").value.toLowerCase();
-  const category = questions[currentQuestionIndex].category || "teachers"; // default category if not set
-  const suggestions = persons[category]
-    .filter((person) => person.toLowerCase().includes(input))
-    .map((name) => `<li onclick="selectPerson('${name}')">${name}</li>`)
-    .join("");
 
+  const suggestions = persons
+    .filter((person) => person.name.toLowerCase().includes(input))
+    .map(
+      (person) =>
+        `<li onclick="selectPerson('${person.name}')">${person.name}</li>`
+    )
+    .join("");
   document.getElementById("searchResults").innerHTML = suggestions;
 }
 

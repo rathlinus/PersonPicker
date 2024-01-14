@@ -105,47 +105,59 @@
     <div id="dashboard"></div>
 
     <script>
+      let pollId = new URL(window.location.href).pathname.split("/")[2];
+
       // Fetch the questions and answers data
       Promise.all([
-        fetch("/questions").then((response) => response.json()),
-        fetch("/answers.json").then((response) => response.json()),
+        fetch(`/poll/${pollId}/questions`).then((response) => response.json()),
+        fetch(`/poll/${pollId}/votes`).then((response) => response.json()),
       ])
         .then(([questions, answers]) => {
           const dashboard = document.getElementById("dashboard");
-          answers.forEach((answerData) => {
-            const questionText = questions.find(
-              (q) => q.id === answerData.questionId
-            ).question;
+
+          // Parse the answers
+          const parsedAnswers = JSON.parse(answers[0].answer);
+
+          questions.forEach((question) => {
+            const questionText = question.question_text;
             const questionDiv = document.createElement("div");
             questionDiv.classList.add("question");
             questionDiv.innerHTML = `<h2>${questionText}</h2>`;
             const votesDiv = document.createElement("div");
             votesDiv.classList.add("votes");
 
-            // Find the max number of votes for this question
-            const maxVotes = Math.max(...Object.values(answerData.votes));
+            // Find the corresponding answer data
+            const answerData = parsedAnswers.find(
+              (a) => a.questionId === question.id
+            );
 
-            const votes = answerData.votes;
-            let voteEntries = Object.entries(votes).sort((a, b) => b[1] - a[1]);
-            if (voteEntries.length === 0) {
-              votesDiv.innerHTML = `<p>No one voted yet on this question</p>`;
+            if (!answerData) {
+              // If no answer data is found, display the message "No one voted yet on this question"
+              votesDiv.innerHTML = `<p>Für diese Frage hat noch niemand abgestimmt.</p>`;
             } else {
+              // If answer data is found, display the vote entries
+              const maxVotes = Math.max(...Object.values(answerData.votes));
+              let voteEntries = Object.entries(answerData.votes).sort(
+                (a, b) => b[1] - a[1]
+              );
+
               voteEntries.forEach(([name, count], index) => {
                 const votePercentage = (count / maxVotes) * 100;
                 votesDiv.innerHTML += `
-        <div class="vote-entry">
-            <span class="name ${
-              index === 0 ? "first-place-name" : ""
-            }">${name}</span>
-            <div class="vote-bar-background ${
-              index === 0 ? "first-place-bar" : ""
-            }" data-width="${votePercentage}">
-                <span class="count">${count}</span>
-            </div>
-        </div>
-    `;
+                  <div class="vote-entry">
+                      <span class="name ${
+                        index === 0 ? "first-place-name" : ""
+                      }">${name}</span>
+                      <div class="vote-bar-background ${
+                        index === 0 ? "first-place-bar" : ""
+                      }" data-width="${votePercentage}">
+                          <span class="count">${count}</span>
+                      </div>
+                  </div>
+              `;
               });
             }
+
             questionDiv.appendChild(votesDiv);
             dashboard.appendChild(questionDiv);
           });
@@ -159,7 +171,7 @@
       setTimeout(() => {
         document.querySelectorAll(".vote-bar-background").forEach((bar) => {
           const width = bar.getAttribute("data-width");
-          calwidth = width * 0.9 + 10;
+          calwidth = width * 0.85 + 15;
           bar.style.width = calwidth + "%";
         });
       }, 100);
