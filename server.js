@@ -1,25 +1,50 @@
 const express = require("express");
+const crypto = require("crypto");
+const mysql = require("mysql2");
 const fs = require("fs");
+require("dotenv").config();
 const app = express();
 const PORT = 3001;
 
-app.use(express.static("public")); // Serve static files from 'public' directory
-app.use(express.json()); // For parsing application/json
+app.use(express.static("public"));
+app.use(express.json());
 
-// Endpoint to get questions
-app.get("/questions", (req, res) => {
-  fs.readFile("questions.json", (err, data) => {
+// Create a connection to the database
+const db = mysql.createConnection({
+  host: process.env.databasehost,
+  user: process.env.databaseuser,
+  password: process.env.databasepassword,
+  database: process.env.databasename,
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error("Error connecting to the database: ", err);
+    return;
+  }
+  console.log("Connected to the MySQL server.");
+});
+
+// Endpoint to serve the voting page for a specific poll
+app.get("/poll/:pollId", (req, res) => {
+  const pollId = req.params.pollId;
+
+  // In a real implementation, you might want to validate the pollId
+  // and check if it exists in the database before serving the page
+
+  fs.readFile("public/poll/index.html", (err, data) => {
     if (err) {
-      res.status(500).send("Error reading questions file");
+      res.status(500).send("Error loading the voting page");
       return;
     }
-    res.json(JSON.parse(data));
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(data);
   });
 });
 
 // Serve the admin dashboard page
-app.get("/admin", (req, res) => {
-  fs.readFile("dash/index.html", (err, data) => {
+app.get("/poll/:pollId/edit", (req, res) => {
+  fs.readFile("public/edit/index.html", (err, data) => {
     if (err) {
       res.status(500).send("Error reading the admin dashboard file");
       return;
@@ -29,90 +54,250 @@ app.get("/admin", (req, res) => {
   });
 });
 
-app.get("/answers.json", (req, res) => {
-  fs.readFile("answers.json", (err, data) => {
+// Serve the admin dashboard page
+app.get("/", (req, res) => {
+  fs.readFile("public/home/index.html", (err, data) => {
     if (err) {
-      res.status(500).send("Error reading answers file");
+      res.status(500).send("Error reading the admin dashboard file");
       return;
     }
-    res.setHeader("Content-Type", "application/json");
-    res.send(data);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(data);
   });
 });
 
-app.post("/update-questions", (req, res) => {
-  if (req.body.password !== ADMIN_PASSWORD) {
-    res.status(401).send("Unauthorized");
-    return;
-  }
+// Serve the admin dashboard page
+app.get("/poll/:pollId/dash", (req, res) => {
+  fs.readFile("public/dash/index.html", (err, data) => {
+    if (err) {
+      res.status(500).send("Error reading the admin dashboard file");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(data);
+  });
+});
 
-  const updatedQuestions = req.body.questions;
-  fs.writeFile(
-    "questions.json",
-    JSON.stringify(updatedQuestions, null, 2),
-    (err) => {
+app.get("/poll/:pollId/questions", (req, res) => {
+  const pollId = req.params.pollId;
+
+  const query = "SELECT questions_json FROM questions WHERE poll_id = ?";
+  db.query(query, [pollId], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error fetching questions from the database");
+      return;
+    }
+
+    // Check if results has at least one row and questions_json is not null
+    if (results.length > 0 && results[0].questions_json) {
+      res.send(results[0].questions_json); // Send the JSON string directly
+    } else {
+      res.json([]); // Send an empty array if no data is found
+    }
+  });
+});
+
+app.get("/poll/:pollId/votes", (req, res) => {
+  const pollId = req.params.pollId;
+
+  const query = "SELECT answer FROM answers WHERE poll_id = ?";
+  db.query(query, [pollId], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error fetching questions from the database");
+      return;
+    }
+
+    // Check if results has at least one row and questions_json is not null
+    if (results.length > 0) {
+      res.send(results); // Send the JSON string directly
+    } else {
+      res.json([]); // Send an empty array if no data is found
+    }
+  });
+});
+
+app.post("/poll/:pollId/update-questions", (req, res) => {
+  const pollId = req.params.pollId;
+  const questionsJson = req.body; // Assuming the entire set of questions is sent as a JSON object
+
+  const query =
+    "INSERT INTO questions (poll_id, questions_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE questions_json = ?";
+  db.query(
+    query,
+    [pollId, JSON.stringify(questionsJson), JSON.stringify(questionsJson)],
+    (err, result) => {
       if (err) {
-        res.status(500).send("Error writing to questions file");
+        console.error(err);
+        res.status(500).send("Error updating questions in the database");
         return;
       }
-      res.status(200).send("Questions updated");
+      res.status(200).send("Questions updated successfully");
     }
   );
 });
 
-// Endpoint to post answers
-app.post("/answers", (req, res) => {
-  const newAnswer = req.body; // { questionId: 1, answer: "John Doe" }
+app.post("/poll/:pollId/update-persons", (req, res) => {
+  const pollId = req.params.pollId;
+  const personsJson = req.body; // Assuming the entire set of questions is sent as a JSON object
 
-  // Read the current answers file
-  fs.readFile("answers.json", (err, data) => {
+  const query =
+    "INSERT INTO persons (poll_id, json) VALUES (?, ?) ON DUPLICATE KEY UPDATE json = ?";
+  db.query(
+    query,
+    [pollId, JSON.stringify(personsJson), JSON.stringify(personsJson)],
+    (err, result) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Error updating persons in the database");
+        return;
+      }
+      res.status(200).send("persons updated successfully");
+    }
+  );
+});
+
+const ADMIN_PASSWORD = "31137";
+
+app.post("/poll/:pollId/verify-password", (req, res) => {
+  // As this involves just a simple comparison, you might want to keep it as is.
+  // Alternatively, store admin passwords securely in the database and compare.
+  if (req.body.password === ADMIN_PASSWORD) {
+    res.status(200).send({ verified: true });
+  } else {
+    res.status(401).send({ verified: false });
+  }
+});
+
+app.post("/poll/:pollId/answers", (req, res) => {
+  const pollId = req.params.pollId;
+  const newAnswer = req.body;
+
+  const readQuery = "SELECT answer FROM answers WHERE poll_id = ?";
+
+  db.query(readQuery, [pollId], (err, result) => {
     if (err) {
-      res.status(500).send("Error reading answers file");
+      console.error(err);
+      res.status(500).send("Error reading from the database");
       return;
     }
 
-    // Parse the current answers data
-    let answers = JSON.parse(data);
-
-    // Initialize the structure if it's not set up properly
-    if (!Array.isArray(answers)) {
+    let answers;
+    if (result.length) {
+      // Parse existing answers if present
+      answers = JSON.parse(result[0].answer);
+      if (!Array.isArray(answers)) {
+        answers = [];
+      }
+    } else {
+      // Initialize answers array if no entry exists
       answers = [];
     }
 
-    // Find the existing entry for the question or create a new one
-    let questionAnswers = answers.find(
+    // Find or create the question entry in answers
+    let questionAnswer = answers.find(
       (ans) => ans.questionId === newAnswer.questionId
     );
-    if (!questionAnswers) {
-      questionAnswers = { questionId: newAnswer.questionId, votes: {} };
-      answers.push(questionAnswers);
+    if (!questionAnswer) {
+      questionAnswer = { questionId: newAnswer.questionId, votes: {} };
+      answers.push(questionAnswer);
     }
 
-    // Increment the vote count for the given answer
-    if (questionAnswers.votes[newAnswer.answer]) {
-      questionAnswers.votes[newAnswer.answer]++;
+    // Update the vote count for the answer
+    if (questionAnswer.votes[newAnswer.answer]) {
+      questionAnswer.votes[newAnswer.answer]++;
     } else {
-      questionAnswers.votes[newAnswer.answer] = 1;
+      questionAnswer.votes[newAnswer.answer] = 1;
     }
 
-    // Write the updated answers back to the file
-    fs.writeFile("answers.json", JSON.stringify(answers, null, 2), (err) => {
-      if (err) {
-        res.status(500).send("Error writing to answers file");
-        return;
+    const updateQuery = `
+    INSERT INTO answers (poll_id, answer) 
+    VALUES (?, ?) 
+    ON DUPLICATE KEY UPDATE answer = VALUES(answer)`;
+
+    db.query(
+      updateQuery,
+      [pollId, JSON.stringify(answers)],
+      (err, updateResult) => {
+        if (err) {
+          console.error(err);
+          res.status(500).send("Error updating the database");
+          return;
+        }
+        res.status(200).send("Answer updated successfully");
       }
-      res.status(200).send("Answer saved");
-    });
+    );
   });
 });
 
-app.get("/persons", (req, res) => {
-  fs.readFile("data/persons.json", (err, data) => {
+app.get("/poll/:pollId/persons", (req, res) => {
+  // Query to fetch persons filtering by poll_id
+  const query = "SELECT * FROM persons WHERE poll_id = ?";
+  db.query(query, [req.params.pollId], (err, results) => {
     if (err) {
-      res.status(500).send("Error reading persons file");
+      console.error(err);
+      res.status(500).send("Error fetching persons from the database");
       return;
     }
-    res.json(JSON.parse(data));
+    res.json(results);
+  });
+});
+
+app.get("/new", (req, res) => {
+  const newPollId = crypto.randomBytes(4).toString("hex");
+
+  db.beginTransaction((err) => {
+    if (err) {
+      console.error("Error starting the transaction:", err);
+      return res.status(500).send("Error starting the transaction");
+    }
+
+    const persons = [
+      { name: "John Doe", category: "student" },
+      { name: "Jane Smith", category: "student" },
+      { name: "Mr. Anderson", category: "teacher" },
+      { name: "Ms. Johnson", category: "teacher" },
+    ];
+
+    const insertPollQuery =
+      "INSERT INTO polls (unique_identifier, title) VALUES (?, ?)";
+    db.query(insertPollQuery, [newPollId, "New Poll"], (err, result) => {
+      if (err) {
+        console.error("Error creating a new poll in the database:", err);
+        return db.rollback(() => {
+          res.status(500).send("Error creating a new poll in the database");
+        });
+      }
+
+      let insertPersonsQuery = `
+        INSERT INTO persons (poll_id, json)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE json = VALUES(json)
+      `;
+      db.query(
+        insertPersonsQuery,
+        [newPollId, JSON.stringify(persons)],
+        (err, result) => {
+          if (err) {
+            console.error("Error adding persons to the database:", err);
+            return db.rollback(() => {
+              res.status(500).send("Error adding persons to the database");
+            });
+          }
+
+          db.commit((err) => {
+            if (err) {
+              console.error("Error committing the transaction:", err);
+              return db.rollback(() => {
+                res.status(500).send("Error committing the transaction");
+              });
+            }
+            res.redirect(`/poll/${newPollId}/edit`);
+          });
+        }
+      );
+    });
   });
 });
 

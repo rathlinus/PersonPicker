@@ -4,13 +4,19 @@ let questions = [];
 let pollId = new URL(window.location.href).pathname.split("/")[2];
 
 // Function to initialize the questionnaire
-// Function to initialize the questionnaire
 function initializeQuestionnaire() {
   Promise.all([
     fetch(`/poll/${pollId}/persons`).then((response) => response.json()),
     fetchQuestions(),
   ]).then(([personsData, _]) => {
     persons = personsData[0].json;
+    // Retrieve progress from cookie
+    const progressCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("progress="));
+    if (progressCookie) {
+      currentQuestionIndex = parseInt(progressCookie.split("=")[1]);
+    }
     createProgressDots();
     displayQuestion();
   });
@@ -73,7 +79,6 @@ function createProgressDots() {
   updateProgress(); // Call this to update progress initially
 }
 
-// Display the current question
 // Display the current question and update suggestions
 function displayQuestion() {
   if (currentQuestionIndex < questions.length) {
@@ -105,8 +110,6 @@ function submitAnswer() {
   const category = "teachers";
   const submitButton = document.getElementById("submitAnswer");
 
-  console.log(persons);
-
   // Check if the answer is in the list of persons
   if (!persons.some((person) => person.name === answerInput)) {
     // Apply the invalid-answer class for animation
@@ -125,6 +128,19 @@ function submitAnswer() {
     answer: answerInput,
   };
 
+  // Check if question has already been answered
+  const answeredQuestionsCookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("answeredQuestions="));
+  let answeredQuestions = [];
+  if (answeredQuestionsCookie) {
+    answeredQuestions = JSON.parse(answeredQuestionsCookie.split("=")[1]);
+    if (answeredQuestions.includes(answer.questionId)) {
+      alert("You have already answered this question.");
+      return;
+    }
+  }
+
   fetch(`/poll/${pollId}/answers`, {
     method: "POST",
     headers: {
@@ -135,7 +151,13 @@ function submitAnswer() {
     .then((response) => response.text())
     .then((data) => {
       currentQuestionIndex++;
-      localStorage.setItem("currentQuestionIndex", currentQuestionIndex); // Store progress
+      // Store progress in cookie
+      document.cookie = `progress=${currentQuestionIndex}`;
+      // Store answered question in cookie
+      answeredQuestions.push(answer.questionId);
+      document.cookie = `answeredQuestions=${JSON.stringify(
+        answeredQuestions
+      )}`;
       displayQuestion(); // Show next question
       updateProgress(); // Update the progress bar and active dot
     });
