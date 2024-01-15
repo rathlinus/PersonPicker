@@ -29,12 +29,40 @@ db.connect((err) => {
 app.get("/poll/:pollId", (req, res) => {
   const pollId = req.params.pollId;
 
-  // In a real implementation, you might want to validate the pollId
-  // and check if it exists in the database before serving the page
+  console.log("test");
 
-  fs.readFile("public/poll/index.html", (err, data) => {
+  pollExists(pollId)
+    .then((exists) => {
+      if (!exists) {
+        fs.readFile("routes/error/index.html", (err, data) => {
+          if (err) {
+            res.status(500).send("Error loading the error page");
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.end(data);
+        });
+      } else {
+        fs.readFile("routes/poll/index.html", (err, data) => {
+          if (err) {
+            res.status(500).send("Error loading the voting page");
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.end(data);
+        });
+      }
+    })
+    .catch((err) => {
+      res.status(500).send("Error checking poll existence");
+    });
+});
+
+// Endpoint to serve the voting page for a specific poll
+app.get("/poll/", (req, res) => {
+  fs.readFile("routes/error/index.html", (err, data) => {
     if (err) {
-      res.status(500).send("Error loading the voting page");
+      res.status(500).send("Error loading the error page");
       return;
     }
     res.writeHead(200, { "Content-Type": "text/html" });
@@ -44,7 +72,7 @@ app.get("/poll/:pollId", (req, res) => {
 
 // Serve the admin dashboard page
 app.get("/poll/:pollId/edit", (req, res) => {
-  fs.readFile("public/edit/index.html", (err, data) => {
+  fs.readFile("routes/edit/index.html", (err, data) => {
     if (err) {
       res.status(500).send("Error reading the admin dashboard file");
       return;
@@ -56,7 +84,7 @@ app.get("/poll/:pollId/edit", (req, res) => {
 
 // Serve the admin dashboard page
 app.get("/", (req, res) => {
-  fs.readFile("public/home/index.html", (err, data) => {
+  fs.readFile("routes/home/index.html", (err, data) => {
     if (err) {
       res.status(500).send("Error reading the admin dashboard file");
       return;
@@ -68,7 +96,7 @@ app.get("/", (req, res) => {
 
 // Serve the admin dashboard page
 app.get("/poll/:pollId/dash", (req, res) => {
-  fs.readFile("public/dash/index.html", (err, data) => {
+  fs.readFile("routes/dash/index.html", (err, data) => {
     if (err) {
       res.status(500).send("Error reading the admin dashboard file");
       return;
@@ -301,6 +329,19 @@ app.get("/new", (req, res) => {
   });
 });
 
+function pollExists(pollId) {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT * FROM polls WHERE unique_identifier = ?";
+    db.query(query, [pollId], (err, results) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(results.length > 0);
+    });
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port http://127.0.0.1:${PORT}/`);
 });
