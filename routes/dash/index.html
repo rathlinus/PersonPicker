@@ -112,9 +112,9 @@
         fetch(`/poll/${pollId}/questions`).then((response) => response.json()),
         fetch(`/poll/${pollId}/votes`).then((response) => response.json()),
       ])
-        .then(([questions, answers]) => {
+        .then(([questions2, answers]) => {
           const dashboard = document.getElementById("dashboard");
-
+          const questions = questions2.questions;
           // Parse the answers
           const parsedAnswers = JSON.parse(answers[0].answer);
 
@@ -142,24 +142,37 @@
               );
 
               voteEntries.forEach(([name, count], index) => {
-                const votePercentage = (count / maxVotes) * 100;
-                votesDiv.innerHTML += `
-                  <div class="vote-entry">
-                      <span class="name ${
-                        index === 0 ? "first-place-name" : ""
-                      }">${name}</span>
-                      <div class="vote-bar-background ${
-                        index === 0 ? "first-place-bar" : ""
-                      }" data-width="${votePercentage}">
-                          <span class="count">${count}</span>
-                      </div>
-                  </div>
-              `;
+                // Check if index is less than or equal to 4
+                if (index <= 4) {
+                  const votePercentage = (count / maxVotes) * 100;
+                  votesDiv.innerHTML += `
+                    <div class="vote-entry">
+                        <span class="name ${
+                          index === 0 ? "first-place-name" : ""
+                        }">${name}</span>
+                        <div class="vote-bar-background ${
+                          index === 0 ? "first-place-bar" : ""
+                        }" data-width="${votePercentage}">
+                            <span class="count">${count}</span>
+                        </div>
+                    </div>
+               `;
+                }
               });
             }
 
             questionDiv.appendChild(votesDiv);
             dashboard.appendChild(questionDiv);
+
+            setTimeout(() => {
+              document
+                .querySelectorAll(".vote-bar-background")
+                .forEach((bar) => {
+                  const width = bar.getAttribute("data-width");
+                  calwidth = width * 0.85 + 15;
+                  bar.style.width = calwidth + "%";
+                });
+            }, 50);
           });
         })
         .catch((error) => {
@@ -167,14 +180,6 @@
           const dashboard = document.getElementById("dashboard");
           dashboard.innerHTML = `<p>Error loading the data. Please try again later.</p>`;
         });
-
-      setTimeout(() => {
-        document.querySelectorAll(".vote-bar-background").forEach((bar) => {
-          const width = bar.getAttribute("data-width");
-          calwidth = width * 0.85 + 15;
-          bar.style.width = calwidth + "%";
-        });
-      }, 100);
     </script>
   </body>
 </html>

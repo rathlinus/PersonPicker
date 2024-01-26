@@ -29,8 +29,6 @@ db.connect((err) => {
 app.get("/poll/:pollId", (req, res) => {
   const pollId = req.params.pollId;
 
-  console.log("test");
-
   pollExists(pollId)
     .then((exists) => {
       if (!exists) {
@@ -109,21 +107,50 @@ app.get("/poll/:pollId/dash", (req, res) => {
 app.get("/poll/:pollId/questions", (req, res) => {
   const pollId = req.params.pollId;
 
-  const query = "SELECT questions_json FROM questions WHERE poll_id = ?";
-  db.query(query, [pollId], (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error fetching questions from the database");
-      return;
-    }
+  const queryQuestions =
+    "SELECT questions_json FROM questions WHERE poll_id = ?";
+  const queryTitle = "SELECT title FROM polls WHERE unique_identifier = ?";
 
-    // Check if results has at least one row and questions_json is not null
-    if (results.length > 0 && results[0].questions_json) {
-      res.send(results[0].questions_json); // Send the JSON string directly
-    } else {
-      res.json([]); // Send an empty array if no data is found
-    }
+  // Create promises for both queries
+  const questionsPromise = new Promise((resolve, reject) => {
+    db.query(queryQuestions, [pollId], (err, results) => {
+      if (err) {
+        console.error(err);
+        reject("Error fetching questions from the database");
+      } else {
+        resolve(results);
+      }
+    });
   });
+
+  const titlePromise = new Promise((resolve, reject) => {
+    db.query(queryTitle, [pollId], (err, results) => {
+      if (err) {
+        console.error(err);
+        reject("Error fetching poll title from the database");
+      } else {
+        resolve(results);
+      }
+    });
+  });
+
+  // Execute both promises and handle the responses
+  Promise.all([questionsPromise, titlePromise])
+    .then(([questionsResults, titleResults]) => {
+      if (questionsResults.length > 0 && questionsResults[0].questions_json) {
+        const response = {
+          title: titleResults.length > 0 ? titleResults[0].title : "No Title",
+          questions: questionsResults[0].questions_json,
+        };
+        res.json(response);
+      } else {
+        res.json({ title: "No Title", questions: [] });
+      }
+    })
+    .catch((error) => {
+      res.status(500).send(error);
+      console.error(error);
+    });
 });
 
 app.get("/poll/:pollId/votes", (req, res) => {

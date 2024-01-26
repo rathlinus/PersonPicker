@@ -156,7 +156,7 @@ button:focus {
   background-color: #6ca22f;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 600px) {
   body,
   html {
     font-size: 18px; /* Increase the base font size */

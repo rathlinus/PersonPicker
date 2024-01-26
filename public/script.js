@@ -26,7 +26,10 @@ async function fetchQuestions() {
   return fetch(`/poll/${pollId}/questions`)
     .then((response) => response.json())
     .then((data) => {
-      questions = data;
+      // Update the heading with the title
+      document.getElementById("heading").innerText = data.title;
+      // Set the questions array
+      questions = data.questions;
     });
 }
 

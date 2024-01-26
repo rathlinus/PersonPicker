@@ -108,6 +108,10 @@
         opacity: 0;
       }
 
+      #copyConfirm {
+        transition: opacity 1s ease-in-out;
+      }
+
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -125,10 +129,35 @@
           opacity: 0;
         }
       }
+
+      #pollLinkContainer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px auto;
+        max-width: 600px;
+      }
+
+      #pollLink {
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #333;
+        background-color: #fff;
+        color: #000;
+        margin-right: 10px;
+        flex-grow: 1;
+      }
     </style>
   </head>
   <body>
     <h1>Edit Questions</h1>
+
+    <div id="pollLinkContainer">
+      <input onclick="copyPollLink()" type="text" id="pollLink" readonly />
+      <button onclick="copyPollLink()">Copy Link</button>
+      <div id="copyConfirm" style="display: none; opacity: 0">Copied!</div>
+    </div>
+
     <div id="editor"></div>
     <button onclick="saveChanges()">Save Changes</button>
 
@@ -195,7 +224,7 @@
         fetch(`/poll/${pollId}/questions`)
           .then((response) => response.json())
           .then((data) => {
-            questions = data;
+            questions = data.questions;
             renderEditor();
           });
       }
@@ -328,27 +357,47 @@
         renderPersonsEditor(); // Re-render the editor to include the new person
       }
 
-      fetchQuestions();
-      fetchPersons();
+      document.getElementById("pollLink").value =
+        window.location.hostname + "/poll/" + pollId;
+
+      function copyPollLink() {
+        var copyText = document.getElementById("pollLink");
+        var copyConfirm = document.getElementById("copyConfirm");
+
+        copyText.select();
+        document.execCommand("copy");
+
+        // Show and fade in the confirmation message
+        copyConfirm.style.display = "block";
+        copyConfirm.style.opacity = 1;
+
+        // After 2 seconds, fade out and hide the message
+        setTimeout(function () {
+          copyConfirm.style.opacity = 0;
+          setTimeout(function () {
+            copyConfirm.style.display = "none";
+          }, 1000); // Wait for the fade-out to finish
+        }, 2000);
+      }
     </script>
     <script>
-      //      let password = prompt("Please enter the password to edit questions:");
-      //
-      //      fetch(`/poll/${pollId}/verify-password`, {
-      //        method: "POST",
-      //        headers: { "Content-Type": "application/json" },
-      //        body: JSON.stringify({ password: password }),
-      //      })
-      //        .then((response) => response.json())
-      //        .then((data) => {
-      //          if (data.verified) {
-      //            // Load and display the editor content
-      //            // For example, call a function fetchQuestions() to load questions
-      //          } else {
-      //            alert("Incorrect password. Access denied.");
-      //            window.location = "/"; // Redirect to another page or show an error message
-      //          }
-      //        });
+      let password = prompt("Please enter the password to edit questions:");
+
+      fetch(`/poll/${pollId}/verify-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.verified) {
+            fetchQuestions();
+            fetchPersons();
+          } else {
+            alert("Incorrect password. Access denied.");
+            window.location = "/"; // Redirect to another page or show an error message
+          }
+        });
     </script>
   </body>
 </html>
