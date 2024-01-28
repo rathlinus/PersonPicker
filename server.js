@@ -178,7 +178,7 @@ app.post("/poll/:pollId/update-questions", (req, res) => {
   const questionsJson = req.body; // Assuming the entire set of questions is sent as a JSON object
 
   const query =
-    "INSERT INTO questions (poll_id, questions_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE questions_json = ?";
+    "INSERT INTO questions (poll_id, questions_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE questions_json = VALUES(questions_json)";
   db.query(
     query,
     [pollId, JSON.stringify(questionsJson), JSON.stringify(questionsJson)],
