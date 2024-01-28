@@ -140,6 +140,9 @@ function submitAnswer() {
     answeredQuestions = JSON.parse(answeredQuestionsCookie.split("=")[1]);
     if (answeredQuestions.includes(answer.questionId)) {
       alert("You have already answered this question.");
+      //skip to next question
+      currentQuestionIndex++;
+
       return;
     }
   }
