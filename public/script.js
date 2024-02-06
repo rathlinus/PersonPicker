@@ -13,10 +13,11 @@ function initializeQuestionnaire() {
     // Retrieve progress from cookie
     const progressCookie = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("progress="));
+      .find((row) => row.startsWith(`progress-${pollId}=`));
     if (progressCookie) {
       currentQuestionIndex = parseInt(progressCookie.split("=")[1]);
     }
+
     createProgressDots();
     displayQuestion();
   });
@@ -142,7 +143,7 @@ function submitAnswer() {
       alert("You have already answered this question.");
       //skip to next question
       currentQuestionIndex++;
-
+      displayQuestion();
       return;
     }
   }
@@ -158,10 +159,21 @@ function submitAnswer() {
     .then((data) => {
       currentQuestionIndex++;
       // Store progress in cookie
-      document.cookie = `progress=${currentQuestionIndex}`;
-      // Store answered question in cookie
-      answeredQuestions.push(answer.questionId);
-      document.cookie = `answeredQuestions=${JSON.stringify(
+      document.cookie = `progress-${pollId}=${currentQuestionIndex}`;
+
+      // Store answered questions in cookie
+      const answeredQuestionsCookieName = `answeredQuestions-${pollId}`;
+      let answeredQuestions = [];
+      const answeredQuestionsCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${answeredQuestionsCookieName}=`));
+      if (answeredQuestionsCookie) {
+        answeredQuestions = JSON.parse(answeredQuestionsCookie.split("=")[1]);
+      }
+      if (!answeredQuestions.includes(answer.questionId)) {
+        answeredQuestions.push(answer.questionId);
+      }
+      document.cookie = `${answeredQuestionsCookieName}=${JSON.stringify(
         answeredQuestions
       )}`;
       displayQuestion(); // Show next question
@@ -202,3 +214,11 @@ document.getElementById("answerInput").addEventListener("focus", function () {
 
 // Initialize questionnaire on page load
 window.onload = initializeQuestionnaire;
+
+document.addEventListener("keydown", function (event) {
+  // Check if the pressed key is the Enter key (key code 13)
+  if (event.keyCode === 13) {
+    // Call the submitAnswer() function when Enter is pressed
+    submitAnswer();
+  }
+});

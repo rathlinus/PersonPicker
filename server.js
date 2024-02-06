@@ -9,21 +9,41 @@ const PORT = 3001;
 app.use(express.static("public"));
 app.use(express.json());
 
-// Create a connection to the database
-const db = mysql.createConnection({
-  host: process.env.databasehost,
-  user: process.env.databaseuser,
-  password: process.env.databasepassword,
-  database: process.env.databasename,
-});
+let db;
 
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to the database: ", err);
-    return;
-  }
-  console.log("Connected to the MySQL server.");
-});
+function handleDisconnect() {
+  db = mysql.createConnection({
+    host: process.env.databasehost,
+    user: process.env.databaseuser,
+    password: process.env.databasepassword,
+    database: process.env.databasename,
+  });
+
+  // Connect to the MySQL server
+  db.connect((err) => {
+    if (err) {
+      console.error("Error connecting to the database: ", err);
+      setTimeout(handleDisconnect, 2000); // Try to reconnect every 2 seconds
+    } else {
+      console.log("Connected to the MySQL server.");
+    }
+  });
+
+  db.on("error", (err) => {
+    console.error("Database error", err);
+    if (err.code === "PROTOCOL_CONNECTION_LOST") {
+      handleDisconnect(); // Reconnect if the connection is lost
+    } else {
+      throw err;
+    }
+  });
+}
+
+// Initial connection setup
+handleDisconnect();
+
+// Reconnect every 12 hours to prevent the connection from being closed by the server
+setInterval(handleDisconnect, 12 * 60 * 60 * 1000);
 
 // Endpoint to serve the voting page for a specific poll
 app.get("/poll/:pollId", (req, res) => {
@@ -70,6 +90,18 @@ app.get("/poll/", (req, res) => {
 
 // Serve the admin dashboard page
 app.get("/poll/:pollId/edit", (req, res) => {
+  //return 404
+
+  //  fs.readFile("routes/error/index.html", (err, data) => {
+  //    if (err) {
+  //      res.status(500).send("Error loading the error page");
+  //      return;
+  //    }
+  //    res.writeHead(200, { "Content-Type": "text/html" });
+  //    res.end(data);
+  //  });
+
+  //return;
   fs.readFile("routes/edit/index.html", (err, data) => {
     if (err) {
       res.status(500).send("Error reading the admin dashboard file");
@@ -80,7 +112,6 @@ app.get("/poll/:pollId/edit", (req, res) => {
   });
 });
 
-// Serve the admin dashboard page
 app.get("/", (req, res) => {
   fs.readFile("routes/home/index.html", (err, data) => {
     if (err) {
@@ -177,20 +208,23 @@ app.post("/poll/:pollId/update-questions", (req, res) => {
   const pollId = req.params.pollId;
   const questionsJson = req.body; // Assuming the entire set of questions is sent as a JSON object
 
-  const query =
-    "INSERT INTO questions (poll_id, questions_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE questions_json = VALUES(questions_json)";
-  db.query(
-    query,
-    [pollId, JSON.stringify(questionsJson), JSON.stringify(questionsJson)],
-    (err, result) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send("Error updating questions in the database");
-        return;
-      }
+  console.log(questionsJson);
+
+  const query = "UPDATE questions SET questions_json = ? WHERE poll_id = ?";
+
+  db.query(query, [JSON.stringify(questionsJson), pollId], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error updating questions in the database");
+      return;
+    }
+    if (result.affectedRows === 0) {
+      // No record was updated, which means the poll_id was not found
+      res.status(404).send("Poll not found");
+    } else {
       res.status(200).send("Questions updated successfully");
     }
-  );
+  });
 });
 
 app.post("/poll/:pollId/update-persons", (req, res) => {
